@@ -1,0 +1,57 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    env_file:
+      - ./docker/postgres.env
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    networks:
+      - appnet
+
+  backend:
+    build:
+      context: .
+      dockerfile: ./docker/backend.dockerfile
+    env_file:
+      - ./docker/backend.env
+      - ./docker/postgres.env
+    depends_on:
+      - postgres
+    ports:
+      - "${BACKEND_PORT}:${BACKEND_PORT}"
+    networks:
+      - appnet
+
+  frontend:
+    build:
+      context: .
+      dockerfile: ./docker/frontend.dockerfile
+    env_file:
+      - ./docker/frontend.env
+    depends_on:
+      - backend
+    ports:
+      - "${FRONTEND_PORT}:3000"
+    networks:
+      - appnet
+
+  pgadmin:
+    image: dpage/pgadmin4
+    env_file:
+      - ./docker/pgadmin.env
+    depends_on:
+      - postgres
+    ports:
+      - "5050:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+      - ./docker/pgadmin_servers.json:/pgadmin4/servers.json:ro
+    networks:
+      - appnet
+
+volumes:
+  pg_data:
+  pgadmin_data:
+
+networks:
+  appnet:
